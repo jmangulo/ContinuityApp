@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35222.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Connect112", "Connect112\Connect112.csproj", "{388F6981-8BDC-4B01-A06C-44A38CC33F31}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{388F6981-8BDC-4B01-A06C-44A38CC33F31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{388F6981-8BDC-4B01-A06C-44A38CC33F31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{388F6981-8BDC-4B01-A06C-44A38CC33F31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{388F6981-8BDC-4B01-A06C-44A38CC33F31}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6456BA3C-DD46-4FF0-BEB3-8652DE079DF1}
+	EndGlobalSection
+EndGlobal
