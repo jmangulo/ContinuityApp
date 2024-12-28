@@ -81,6 +81,8 @@ namespace Connect112
 
         public ICommand StopTestButton { get; }
 
+        public ICommand ClearButton { get; }
+
         public ICommand ExportButton { get; }
 
         public ICommand SelectionChangedEvent { get; }
@@ -107,6 +109,7 @@ namespace Connect112
             ConnectButton = new RelayCommand(ConnectButtonClick);
             StartTestButton = new RelayCommand(StartTestButtonClick);
             StopTestButton = new RelayCommand(StopTestButtonClick);
+            ClearButton = new RelayCommand((p) => { _testConnection.ClearTest(); });
             ExportButton = new RelayCommand(ExportButtonClick);
             SelectionChangedEvent = new RelayCommand(OnSelectionChangedHandled);
             PreviewKeyDownEvent = new RelayCommand(PreviewKeyDownEventHandled);
@@ -137,7 +140,7 @@ namespace Connect112
 
         private void ExportButtonClick(object parameter)
         {
-
+            ExportViewModel.ExportToCSV(_testConnection.TestName, _testConnection.PinCollection);
         }
 
         private void TestPinButtonClick(object parameter)
@@ -152,7 +155,10 @@ namespace Connect112
         {
             if (parameter is DataGrid grid)
             {
-                grid.ScrollIntoView(grid.SelectedItem);
+                if (grid.SelectedItem is not null)
+                {
+                    grid.ScrollIntoView(grid.SelectedItem);
+                }
             }
         }
 

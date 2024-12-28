@@ -1,15 +1,22 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Input;
 
 namespace Connect112.ChildViewModels
 {
     public interface ITestConnection
     {
+        string TestName { get; set; }
+
+        IList<Pin> PinCollection { get; }
+
         void StartTest();
 
         void StopTest();
 
         void SelectNextPin();
+
+        void ClearTest();
 
         EventHandler<TestState>? OnTestStateChanged { get; set; }
     }
@@ -92,6 +99,14 @@ namespace Connect112.ChildViewModels
             }
         }
 
+        public IList<Pin> PinCollection
+        {
+            get
+            {
+                return Pins != null ? Pins.ToList() : new List<Pin> { };
+            }
+        }
+
         #region BUTTON PROPS
 
         public ICommand TestPinButton { get; }
@@ -156,6 +171,14 @@ namespace Connect112.ChildViewModels
             }
         }
 
+        public void ClearTest()
+        {
+            LoadPins();
+            TestName = string.Empty;
+            TestState = TestState.None;
+            OnTestStateChanged?.Invoke(this, _testState);
+        }
+
         private void LoadPins()
         {
             Pins = new ObservableCollection<Pin>();
@@ -182,9 +205,12 @@ namespace Connect112.ChildViewModels
     {
         public int PinIndex { get; set; }
 
+        [DisplayName("Pin")]
         public string? PinName { get; set; }
 
         private PinResult _pinResult;
+
+        [DisplayName("Test Result")]
         public PinResult PinResult
         {
             get { return _pinResult; }
