@@ -33,6 +33,11 @@ namespace Connect112.ChildViewModels
             }
         }
 
+        private int _pinsTestedCount
+        {
+            get { return Pins != null ? Pins.Where(p => p.PinResult > 0).Count() : 0; }
+        }
+
         #region UI PROPS
 
         private string? _testName;
@@ -167,6 +172,12 @@ namespace Connect112.ChildViewModels
                 if (pinIndex < Pins.Count - 1)
                 {
                     SelectedPin = Pins[pinIndex + 1];
+                }
+
+                if (_pinsTestedCount == TOTAL_PINS)
+                {
+                    TestState = TestState.Completed;
+                    OnTestStateChanged?.Invoke(this, _testState);
                 }
             }
         }

@@ -12,6 +12,8 @@ namespace Connect112
         private readonly ICommunication _comm;
         private readonly ITestConnection _testConnection;
 
+        private bool _debounce;
+
         #region UI PROPS
 
         private bool _isDeviceFound;
@@ -103,13 +105,15 @@ namespace Connect112
             _comm.Initialize();
             UpdateHeaderAfterStateChange(_comm.IsDeviceFound() ? TestState.None : TestState.ConnectionError);
 
+            _debounce = false;
+
             _testConnection = new TestConnection(TestPinButtonClick);
             _testConnection.OnTestStateChanged += OnTestStateChangedHandled;
 
             ConnectButton = new RelayCommand(ConnectButtonClick);
             StartTestButton = new RelayCommand(StartTestButtonClick);
             StopTestButton = new RelayCommand(StopTestButtonClick);
-            ClearButton = new RelayCommand((p) => { _testConnection.ClearTest(); });
+            ClearButton = new RelayCommand((p) => _testConnection.ClearTest());
             ExportButton = new RelayCommand(ExportButtonClick);
             SelectionChangedEvent = new RelayCommand(OnSelectionChangedHandled);
             PreviewKeyDownEvent = new RelayCommand(PreviewKeyDownEventHandled);
@@ -128,27 +132,58 @@ namespace Connect112
 
         private void StartTestButtonClick(object parameter)
         {
+            if (_debounce)
+            {
+                return;
+            }
+
+            _debounce = true;
             _testConnection.StartTest();
             _comm.Open();
+            _debounce = false;
         }
 
         private void StopTestButtonClick(object parameter)
         {
+            if (_debounce)
+            {
+                return;
+            }
+
+            _debounce = true;
             _testConnection.StopTest();
             _comm.Close();
+            _debounce = false;
         }
 
         private void ExportButtonClick(object parameter)
         {
+            if (_debounce)
+            {
+                return;
+            }
+
+            _debounce = true;
             ExportViewModel.ExportToCSV(_testConnection.TestName, _testConnection.PinCollection);
+            _debounce = false;
         }
 
         private void TestPinButtonClick(object parameter)
         {
+            if (_debounce)
+            {
+                return;
+            }
+
+            _debounce = true;
+
             if (parameter is Pin pin)
             {
+
                 TestPinConnection(pin);
             }
+
+            _debounce = false;
         }
 
         private void OnSelectionChangedHandled(object parameter)
@@ -168,8 +203,14 @@ namespace Connect112
             {
                 if (key.Key == Key.Enter)
                 {
+                    if (_debounce)
+                    {
+                        return;
+                    }
+                    _debounce = true;
                     DataGrid source = (DataGrid)key.Source;
                     TestPinConnection((Pin)source.SelectedItem);
+                    _debounce = false;
                 }
             }
         }
