@@ -23,6 +23,7 @@ namespace Connect112
             var mainWindow = new MainWindow();
             var mainViewModel = new MainViewModel(_logger, _comm);
             mainWindow.DataContext = mainViewModel;
+            mainViewModel.ScrollRequested += mainWindow.OnScrollIntoViewRequested;
             mainWindow.Show();
         }
 

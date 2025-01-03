@@ -15,6 +15,12 @@ namespace Connect112
 
         bool TestPin(int pin);
 
+        bool TurnOnAutoTest();
+
+        bool TurnOffAutoTest();
+
+        bool Reset();
+
         EventHandler<string>? OnDataDetected { get; set; }
 
         EventHandler<bool>? OnDeviceStatus { get; set; }
@@ -44,6 +50,8 @@ namespace Connect112
             LoadAvailableComports();
             AutoDetectDevice();
             AutoSelectDevice();
+            ResetDevice();
+            MonitorPort(true);
         }
 
         public bool IsDeviceFound()
@@ -54,9 +62,19 @@ namespace Connect112
         public bool TestPin(int pin)
         {
             string cmd = $"READ:{pin}";
-            Write(selectedPort, cmd);
-            Task.Delay(250).Wait();
-            return Read(selectedPort) == "1";
+            return SendCommandAndRead(cmd) == "1";
+        }
+
+        public bool TurnOnAutoTest()
+        {
+            string cmd = "AUTO_ON";
+            return SendCommandAndRead(cmd) == "P";
+        }
+
+        public bool TurnOffAutoTest()
+        {
+            string cmd = "AUTO_OFF";
+            return SendCommandAndRead(cmd) == "P";
         }
 
         public bool Open()
@@ -67,6 +85,11 @@ namespace Connect112
         public void Close()
         {
             Close(selectedPort);
+        }
+
+        public bool Reset()
+        {
+            return ResetDevice();
         }
 
         private void LoadAvailableComports()
@@ -89,7 +112,7 @@ namespace Connect112
                 if (isOpen)
                 {
                     Write(sp, "IDEN");
-                    Thread.Sleep(500);
+                    Thread.Sleep(250);
                     string response = Read(sp);
                     if (response?.Contains("CONNECT_112") == true)
                     {
@@ -181,6 +204,59 @@ namespace Connect112
             {
                 port.Close();
             }
+        }
+
+        private string SendCommandAndRead(string cmd)
+        {
+            MonitorPort(false);
+            Write(selectedPort, cmd);
+            Task.Delay(250).Wait();
+            string res = Read(selectedPort);
+            MonitorPort(true);
+            return res;
+        }
+
+        private void MonitorPort(bool on)
+        {
+            if (selectedPort != null)
+            {
+                if (on)
+                {
+                    selectedPort.DataReceived += OnDataReceived;
+                }
+                else
+                {
+                    selectedPort.DataReceived -= OnDataReceived;
+                }
+            }
+        }
+
+        private void OnDataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            if (selectedPort == null)
+                return;
+            string receivedData = selectedPort.ReadExisting();
+            messageBuffer.Append(receivedData);
+
+            if (messageBuffer.ToString().Contains("\n"))
+            {
+                string completeMessage = CleanMessage(messageBuffer.ToString());
+                messageBuffer.Clear();
+                OnDataDetected?.Invoke(this, completeMessage);
+            }
+        }
+
+        private bool ResetDevice()
+        {
+            string response = "";
+            if (OpenPort(selectedPort))
+            {
+                Write(selectedPort, "RESET");
+                Task.Delay(250).Wait();
+                response = Read(selectedPort);
+            }
+
+            return response.Trim() == "INIT";
         }
     }
 }

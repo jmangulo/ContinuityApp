@@ -1,5 +1,6 @@
 ﻿using Connect112.ChildViewModels;
 using LogManager;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -73,6 +74,21 @@ namespace Connect112
             }
         }
 
+        private string? _selectedAutoOption;
+        public string? SelectedAutoOption
+        {
+            get { return _selectedAutoOption; }
+            set
+            {
+                if (_selectedAutoOption != value)
+                {
+                    _selectedAutoOption = value;
+                    OnPropertyChanged(nameof(SelectedAutoOption));
+                    SwitchAutoTestFeature(value == GetTestTypeString(TestType.Auto));
+                }
+            }
+        }
+
         public ITestConnection TestConnection { get { return _testConnection; } }
 
         #region BUTTON PROPS AND EVENT BINDINGS
@@ -83,6 +99,8 @@ namespace Connect112
 
         public ICommand StopTestButton { get; }
 
+        public ICommand TestPinButton { get; }
+
         public ICommand ClearButton { get; }
 
         public ICommand ExportButton { get; }
@@ -91,32 +109,47 @@ namespace Connect112
 
         public ICommand PreviewKeyDownEvent { get; }
 
+        public ICommand OnClosingApplicationEvent { get; }
+
         #endregion
+
+        #endregion
+
+        #region EVENTS
+
+        public event EventHandler<int>? ScrollRequested;
 
         #endregion
 
         #region CONSTRUCTOR(S)
+
         public MainViewModel(ILogger logger, ICommunication comm)
         {
             _logger = logger;
 
             _comm = comm;
             _comm.OnDeviceStatus += OnDeviceUpdateConnectionStatus;
+            _comm.OnDataDetected += OnDataReceived;
             _comm.Initialize();
             UpdateHeaderAfterStateChange(_comm.IsDeviceFound() ? TestState.None : TestState.ConnectionError);
 
             _debounce = false;
 
-            _testConnection = new TestConnection(TestPinButtonClick);
+            SelectedAutoOption = GetTestTypeString(TestType.Manual);
+
+            PinAction pinActions = new PinAction(_comm.TurnOnAutoTest, _comm.TurnOffAutoTest, TestPin);
+            _testConnection = new TestConnection(pinActions);
             _testConnection.OnTestStateChanged += OnTestStateChangedHandled;
 
             ConnectButton = new RelayCommand(ConnectButtonClick);
             StartTestButton = new RelayCommand(StartTestButtonClick);
             StopTestButton = new RelayCommand(StopTestButtonClick);
-            ClearButton = new RelayCommand((p) => _testConnection.ClearTest());
+            TestPinButton = new RelayCommand(TestPinButtonClick);
+            ClearButton = new RelayCommand(ClearButtonClick);
             ExportButton = new RelayCommand(ExportButtonClick);
             SelectionChangedEvent = new RelayCommand(OnSelectionChangedHandled);
             PreviewKeyDownEvent = new RelayCommand(PreviewKeyDownEventHandled);
+            OnClosingApplicationEvent = new RelayCommand(OnClosingApplicationEventHandled);
         }
 
         #endregion
@@ -140,6 +173,14 @@ namespace Connect112
             _debounce = true;
             _testConnection.StartTest();
             _comm.Open();
+            if (GetTestType(_selectedAutoOption) == TestType.Auto)
+            {
+                _comm.TurnOnAutoTest();
+            }
+            else
+            {
+                _comm.TurnOffAutoTest();
+            }
             _debounce = false;
         }
 
@@ -151,7 +192,16 @@ namespace Connect112
             }
 
             _debounce = true;
+
+            var result = MessageBox.Show($"Are you sure you want to stop test, {TestConnection.TestName}? Doing so will abort the test and you will need to start over.", "Stop Test?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (!result.Equals(MessageBoxResult.Yes))
+            {
+                _debounce = false;
+                return;
+            }
+
             _testConnection.StopTest();
+            _comm.TurnOffAutoTest();
             _comm.Close();
             _debounce = false;
         }
@@ -180,10 +230,46 @@ namespace Connect112
             if (parameter is Pin pin)
             {
 
-                TestPinConnection(pin);
+                _testConnection.TestPinConnection(pin);
             }
 
             _debounce = false;
+        }
+
+        private void ClearButtonClick(object parameter)
+        {
+            _comm.Reset();
+            _testConnection.ClearTest();
+        }
+
+        #endregion
+
+        #region EVENT SUBSCRIPTIONS
+
+        private void OnDeviceUpdateConnectionStatus(object? sender, bool status)
+        {
+            IsDeviceFound = status;
+        }
+
+        private void OnTestStateChangedHandled(object? sender, TestState testState)
+        {
+            UpdateHeaderAfterStateChange(testState);
+        }
+
+        private void OnDataReceived(object? sender, string data)
+        {
+            if (data?.Contains("PASS:", StringComparison.CurrentCultureIgnoreCase) == true)
+            {
+                string[] splitResponse = data.Split(new char[] { ':' });
+                if (splitResponse.Length > 1 && int.TryParse(splitResponse[1], out int pinIndex))
+                {
+                    _testConnection.RegisterPinSuccess(pinIndex);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ScrollRequested?.Invoke(this, pinIndex);
+                    });
+                }
+            }
         }
 
         private void OnSelectionChangedHandled(object parameter)
@@ -199,6 +285,11 @@ namespace Connect112
 
         private void PreviewKeyDownEventHandled(object parameter)
         {
+            if (_selectedAutoOption == GetTestTypeString(TestType.Auto))
+            {
+                return;
+            }
+
             if (parameter is KeyEventArgs key)
             {
                 if (key.Key == Key.Enter)
@@ -209,24 +300,25 @@ namespace Connect112
                     }
                     _debounce = true;
                     DataGrid source = (DataGrid)key.Source;
-                    TestPinConnection((Pin)source.SelectedItem);
+                    _testConnection.TestPinConnection((Pin)source.SelectedItem);
                     _debounce = false;
                 }
             }
         }
 
-        #endregion
-
-        #region EVENT SUBSCRIPTIONS
-
-        private void OnDeviceUpdateConnectionStatus(object? sender, bool status)
+        private void OnClosingApplicationEventHandled(object parameter)
         {
-            IsDeviceFound = status;
-        }
+            if (parameter is System.ComponentModel.CancelEventArgs e)
+            {
+                bool cancelClosing = false;
+                if (_testConnection.TestState == TestState.Running)
+                {
+                    var response = MessageBox.Show("Are you sure you want to close down the application? You are currently running a test.", "Close Application?", MessageBoxButton.YesNoCancel, MessageBoxImage.Exclamation);
+                    cancelClosing = !response.Equals(MessageBoxResult.Yes);
+                }
 
-        private void OnTestStateChangedHandled(object? sender, TestState testState)
-        {
-            UpdateHeaderAfterStateChange(testState);
+                e.Cancel = cancelClosing;
+            }
         }
 
         #endregion
@@ -305,12 +397,39 @@ namespace Connect112
             return (background, foreground);
         }
 
-
-        private void TestPinConnection(Pin pin)
+        private bool TestPin(int pinIndex)
         {
-            int pinNumber = pin.PinIndex;
-            pin.PinResult = _comm.TestPin(pinNumber) ? PinResult.Pass : PinResult.Fail;
-            TestConnection.SelectNextPin();
+            return _comm.TestPin(pinIndex);
         }
+
+        private void SwitchAutoTestFeature(bool enable)
+        {
+            if (enable)
+            {
+                _comm.TurnOnAutoTest();
+            }
+            else
+            {
+                _comm.TurnOffAutoTest();
+            }
+        }
+
+        private string GetTestTypeString(TestType testType)
+        {
+            string? name = Enum.GetName(typeof(TestType), testType);
+
+            return !string.IsNullOrEmpty(name) ? name : "";
+        }
+
+        private TestType GetTestType(string? testTypeName)
+        {
+            return (TestType)Enum.Parse(typeof(TestType), testTypeName ?? "");
+        }
+    }
+
+    public enum TestType
+    {
+        Manual,
+        Auto
     }
 }

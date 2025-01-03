@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows.Input;
 
 namespace Connect112.ChildViewModels
 {
@@ -8,15 +7,21 @@ namespace Connect112.ChildViewModels
     {
         string TestName { get; set; }
 
+        TestState TestState { get; set; }
+
         IList<Pin> PinCollection { get; }
 
         void StartTest();
 
         void StopTest();
 
-        void SelectNextPin();
+        void RegisterPinSuccess(int pin);
 
         void ClearTest();
+
+        void TestPinConnection(int pin);
+
+        void TestPinConnection(Pin pin);
 
         EventHandler<TestState>? OnTestStateChanged { get; set; }
     }
@@ -24,6 +29,8 @@ namespace Connect112.ChildViewModels
     public class TestConnection : UpdateUI, ITestConnection
     {
         private const int TOTAL_PINS = 112;
+
+        private readonly PinAction _pinActions;
 
         private bool _hasUserTestedAnyPins
         {
@@ -114,7 +121,6 @@ namespace Connect112.ChildViewModels
 
         #region BUTTON PROPS
 
-        public ICommand TestPinButton { get; }
 
         #endregion
 
@@ -127,12 +133,13 @@ namespace Connect112.ChildViewModels
         #endregion
 
         #region CONSTRUCTOR(S)
-        internal TestConnection(Action<object> executeTestPinAction)
+
+        internal TestConnection(PinAction pinActions)
         {
             Pins = new List<Pin>();
             LoadPins();
 
-            TestPinButton = new RelayCommand(executeTestPinAction);
+            _pinActions = pinActions;
         }
 
         #endregion
@@ -164,21 +171,30 @@ namespace Connect112.ChildViewModels
             OnTestStateChanged?.Invoke(this, _testState);
         }
 
-        public void SelectNextPin()
+        public void TestPinConnection(int pin)
         {
-            if (_selectedPin != null)
+            var pinModel = Pins.FirstOrDefault(p => p.PinIndex == pin);
+            if (pinModel != null)
             {
-                int pinIndex = _selectedPin.PinIndex;
-                if (pinIndex < Pins.Count - 1)
-                {
-                    SelectedPin = Pins[pinIndex + 1];
-                }
+                int pinNumber = pinModel.PinIndex;
+                pinModel.PinResult = _pinActions.TestPinAction(pinNumber) ? PinResult.Pass : PinResult.Fail;
+                SelectNextPin();
+            }
+        }
 
-                if (_pinsTestedCount == TOTAL_PINS)
-                {
-                    TestState = TestState.Completed;
-                    OnTestStateChanged?.Invoke(this, _testState);
-                }
+        public void TestPinConnection(Pin pin)
+        {
+            int pinNumber = pin.PinIndex;
+            pin.PinResult = _pinActions.TestPinAction(pinNumber) ? PinResult.Pass : PinResult.Fail;
+            SelectNextPin();
+        }
+
+        public void RegisterPinSuccess(int pin)
+        {
+            var pinModel = Pins.FirstOrDefault(p => p.PinIndex == pin);
+            if (pinModel != null)
+            {
+                pinModel.PinResult = PinResult.Pass;
             }
         }
 
@@ -210,6 +226,33 @@ namespace Connect112.ChildViewModels
 
 
         #endregion
+
+        private void SelectNextPin()
+        {
+            if (_selectedPin != null)
+            {
+                int pinIndex = _selectedPin.PinIndex + 1;
+
+                while (pinIndex < Pins.Count)
+                {
+                    if (Pins[pinIndex].PinResult == PinResult.Untested)
+                    {
+                        SelectedPin = Pins[pinIndex];
+                        break;
+                    }
+                    else
+                    {
+                        pinIndex++;
+                    }
+                }
+
+                if (_pinsTestedCount == TOTAL_PINS)
+                {
+                    TestState = TestState.Completed;
+                    OnTestStateChanged?.Invoke(this, _testState);
+                }
+            }
+        }
     }
 
     public class Pin : UpdateUI
@@ -250,5 +293,21 @@ namespace Connect112.ChildViewModels
         Untested,
         Pass,
         Fail
+    }
+
+    public class PinAction
+    {
+        public Func<bool> StartTestAction { get; }
+
+        public Func<bool> StopTestAction { get; }
+
+        public Func<int, bool> TestPinAction { get; }
+
+        internal PinAction(Func<bool> startTestAction, Func<bool> stopTestAction, Func<int, bool> testPinAction)
+        {
+            StartTestAction = startTestAction;
+            StopTestAction = stopTestAction;
+            TestPinAction = testPinAction;
+        }
     }
 }
