@@ -12,7 +12,7 @@ namespace Connect112
         ILogger _logger;
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            _logger = new Logger(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Engineering Prototypes", "Connect 112", "log.txt"));
+            _logger = new Logger(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NextGen Prototypes", "Connect 112", "log.txt"));
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             DispatcherUnhandledException += App_DispatcherUnhandledException;
