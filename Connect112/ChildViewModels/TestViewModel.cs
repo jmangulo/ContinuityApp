@@ -196,6 +196,8 @@ namespace Connect112.ChildViewModels
             {
                 pinModel.PinResult = PinResult.Pass;
             }
+
+            CheckTestCompleted();
         }
 
         public void ClearTest()
@@ -245,12 +247,16 @@ namespace Connect112.ChildViewModels
                         pinIndex++;
                     }
                 }
+                CheckTestCompleted();
+            }
+        }
 
-                if (_pinsTestedCount == TOTAL_PINS)
-                {
-                    TestState = TestState.Completed;
-                    OnTestStateChanged?.Invoke(this, _testState);
-                }
+        private void CheckTestCompleted()
+        {
+            if (_pinsTestedCount == TOTAL_PINS)
+            {
+                TestState = TestState.Completed;
+                OnTestStateChanged?.Invoke(this, _testState);
             }
         }
     }
