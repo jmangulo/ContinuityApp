@@ -263,9 +263,9 @@ namespace Connect112
                 string[] splitResponse = data.Split(new char[] { ':' });
                 if (splitResponse.Length > 1 && int.TryParse(splitResponse[1], out int pinIndex))
                 {
-                    _testConnection.RegisterPinSuccess(pinIndex);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        _testConnection.RegisterPinSuccess(pinIndex);
                         ScrollRequested?.Invoke(this, pinIndex);
                     });
                 }
