@@ -5,13 +5,15 @@ namespace Connect112
 {
     public class SerialCommunicationUnitTest : ICommunication
     {
-        private readonly Random random = new Random();
+        private readonly Random _random = new Random();
+        private System.Timers.Timer? _timer;
+        private int _dummyChannel = 0;
 
-        private readonly StringBuilder messageBuffer = new StringBuilder();
+        private readonly StringBuilder _messageBuffer = new StringBuilder();
 
-        private readonly List<string> portNames;
+        private readonly List<string> _portNames;
 
-        private readonly List<string> validPortNames;
+        private readonly List<string> _validPortNames;
 
         private SerialPort? selectedPort;
 
@@ -20,8 +22,8 @@ namespace Connect112
 
         public SerialCommunicationUnitTest()
         {
-            portNames = new List<string>();
-            validPortNames = new List<string>();
+            _portNames = new List<string>();
+            _validPortNames = new List<string>();
         }
 
         public void Close()
@@ -31,23 +33,23 @@ namespace Connect112
 
         public void Initialize()
         {
-            portNames.Clear();
+            _portNames.Clear();
             string[] ports = new string[] { "COM3" };
             ports = ports.Distinct().ToArray();
             foreach (string port in ports)
             {
-                portNames.Add(port);
+                _portNames.Add(port);
             }
 
-            foreach (string pn in portNames)
+            foreach (string pn in _portNames)
             {
                 Thread.Sleep(250);
-                validPortNames.Add(pn);
+                _validPortNames.Add(pn);
             }
 
-            if (validPortNames.Count > 0)
+            if (_validPortNames.Count > 0)
             {
-                selectedPort = GetSerialPort(validPortNames[0]);
+                selectedPort = GetSerialPort(_validPortNames[0]);
                 OnDeviceStatus?.Invoke(this, true);
             }
             else
@@ -76,11 +78,13 @@ namespace Connect112
         public bool TestPin(int pin)
         {
             Task.Delay(250).Wait();
-            return random.Next(100) < 50;
+            return _random.Next(100) < 50;
         }
 
         public bool TurnOffAutoTest()
         {
+            _timer?.Stop();
+            _timer = null;
             Task.Delay(250).Wait();
             return true;
         }
@@ -88,6 +92,11 @@ namespace Connect112
         public bool TurnOnAutoTest()
         {
             Task.Delay(250).Wait();
+            _dummyChannel = 0;
+            _timer = new System.Timers.Timer(100);
+            _timer.Elapsed += OnGetDummyReading;
+            _timer.AutoReset = true;
+            _timer.Enabled = true;
             return true;
         }
 
@@ -125,16 +134,20 @@ namespace Connect112
 
         private void OnDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (selectedPort == null)
-                return;
-            string receivedData = selectedPort.ReadExisting();
-            messageBuffer.Append(receivedData);
+            string completeMessage = _messageBuffer.ToString();
+            _messageBuffer.Clear();
+            OnDataDetected?.Invoke(this, $"PASS:{_dummyChannel}");
 
-            if (messageBuffer.ToString().Contains("\n"))
+        }
+
+        private void OnGetDummyReading(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            OnDataReceived(sender, null);
+            _dummyChannel++;
+            if (_dummyChannel > 111)
             {
-                string completeMessage = messageBuffer.ToString();
-                messageBuffer.Clear();
-                OnDataDetected?.Invoke(this, completeMessage);
+                _timer?.Stop();
+                _timer = null;
             }
         }
     }

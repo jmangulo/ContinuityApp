@@ -19,8 +19,8 @@ namespace Connect112
 
             _logger.LogMessage("Application started");
 
-            ICommunication _comm = new SerialCommunication();
-            //ICommunication _comm = new SerialCommunicationUnitTest(); // testing class
+            //ICommunication _comm = new SerialCommunication();
+            ICommunication _comm = new SerialCommunicationUnitTest(); // testing class
             var mainWindow = new MainWindow();
             var mainViewModel = new MainViewModel(_logger, _comm);
             mainWindow.DataContext = mainViewModel;
