@@ -10,10 +10,10 @@
     <ROW Property="ARPPRODUCTICON" Value="DesktopIcon.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="https://github.com/jmangulo/ContinuityApp"/>
     <ROW Property="Manufacturer" Value="NextGen Prototypes"/>
-    <ROW Property="ProductCode" Value="1033:{7ED2526B-D39D-4CFB-AB97-B1B3761B0692} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{A46B07F6-D753-4E2C-9D06-D34F1F80BFBE} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Connect112"/>
-    <ROW Property="ProductVersion" Value="1.0.0.0" Options="32"/>
+    <ROW Property="ProductVersion" Value="1.0.0.1" Options="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{27D41142-9FF0-457C-AD8C-17FB37A1F255}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="AnyCPU_Release_1:Windows 9x/ME" ValueLocId="-"/>
@@ -532,7 +532,7 @@
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
-    <ROW BuildKey="AnyCPU_Release_1" BuildName="AnyCPU_Release_1" BuildOrder="1" BuildType="0" PackageFolder="Setup" PackageFileName="[|ProductName]-Installation" Languages="en" InstallationType="4" UseLargeSchema="true"/>
+    <ROW BuildKey="AnyCPU_Release_1" BuildName="AnyCPU_Release_1" BuildOrder="1" BuildType="0" PackageFolder="Setup" PackageFileName="[|ProductName]-Installation-[|ProductVersion]" Languages="en" InstallationType="4" UseLargeSchema="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>

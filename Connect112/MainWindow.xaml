@@ -86,8 +86,24 @@
             <DataGrid x:Name="PinDataGrid"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
+                      Background="Transparent"
                       SelectedItem="{Binding TestConnection.SelectedPin}"
                       ItemsSource="{Binding TestConnection.Pins}">
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridCell}">
+                        <Style.Triggers>
+                            <Trigger Property="DataGridCell.IsSelected"
+                                     Value="True">
+                                <Setter Property="Opacity"
+                                        Value="0.8" />
+                                <Setter Property="Background"
+                                        Value="Transparent" />
+                                <Setter Property="Foreground"
+                                        Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="SelectionChanged">
                         <i:InvokeCommandAction Command="{Binding SelectionChangedEvent}"
@@ -100,19 +116,9 @@
                 </i:Interaction.Triggers>
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
+                        <Setter Property="Background"
+                                Value="{Binding RowBackground}" />
                         <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}"
-                                               Value="True" />
-                                    <Condition Binding="{Binding PinResult}"
-                                               Value="1" />
-                                </MultiDataTrigger.Conditions>
-                                <MultiDataTrigger.Setters>
-                                    <Setter Property="Background"
-                                            Value="Aqua" />
-                                </MultiDataTrigger.Setters>
-                            </MultiDataTrigger>
                             <DataTrigger Binding="{Binding PinResult}"
                                          Value="1">
                                 <Setter Property="Background"
@@ -132,10 +138,12 @@
                     <DataGridTextColumn Header="Pin"
                                         Width="*"
                                         IsReadOnly="True"
+                                        CanUserSort="False"
                                         Binding="{Binding PinName}" />
                     <DataGridTextColumn Header="Result"
                                         Width="*"
                                         IsReadOnly="True"
+                                        CanUserSort="False"
                                         Binding="{Binding PinResult}" />
                 </DataGrid.Columns>
             </DataGrid>
